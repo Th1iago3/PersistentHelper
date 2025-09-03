@@ -26,7 +26,7 @@ e reinicia o serviço de rede para garantir conectividade.
 Antes de executar, certifique-se de ter:
 - Um sistema Linux com **systemd + NetworkManager**  
 - Permissões de **sudo**  
-- Pacotes básicos já instalados (`bash`, `coreutils`, `util-linux`)  
+- Pacotes básicos já instalados (`bash`, `coreutils`, `util-linux`, `git`)  
 
 ---
 

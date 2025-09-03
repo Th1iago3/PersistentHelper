@@ -34,7 +34,7 @@ Antes de executar, certifique-se de ter:
 
 Clone este repositório:
 ```bash
-git clone https://github.com/seu-usuario/seu-repositorio.git
-cd seu-repositorio
+git clone https://github.com/Th1iago3/PersistentHelper
+cd PersistentHelper
 chmod +x PersistentHelper.sh
 sudo bash PersistentHelper.sh

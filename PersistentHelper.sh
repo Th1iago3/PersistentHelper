@@ -34,7 +34,6 @@ else
     exit 1
 fi
 
-# Passo 2: Criar o arquivo novo vazio
 print_step "[ N ]: Inicializando NetworkManager..."
 sudo touch /etc/resolv.conf
 if [ $? -eq 0 ]; then

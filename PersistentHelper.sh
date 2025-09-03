@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 
 function print_step {
     echo -e "${BLUE}=====================================${NC}"
-    echo -e "${GREEN}Etapa: $1${NC}"
+    echo -e "${GREEN}$1${NC}"
     echo -e "${BLUE}=====================================${NC}"
 }
 

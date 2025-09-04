@@ -72,10 +72,10 @@ else
     exit 1
 fi
 
-print_step "Reiniciando NetworkManager para aplicar mudanças"
+print_step "[ N ]: Reiniciando NetworkManager para aplicar mudanças..."
 sudo systemctl restart NetworkManager
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}NetworkManager reiniciado com sucesso!${NC}"
+    echo -e "${GREEN}[ N ]: NetworkManager reiniciado com sucesso!${NC}"
 else
     echo -e "${RED}Erro ao reiniciar NetworkManager. Verifique se o serviço existe.${NC}"
     exit 1

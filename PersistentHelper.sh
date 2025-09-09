@@ -5,14 +5,13 @@
 # Contato: @0xffff00
 # ====================================================
 
-# Cores para logs
+# Cores
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # Sem cor
 
-# Função de log com separador e delay
 function log_step {
     echo -e "\n${BLUE}=====================================${NC}"
     echo -e "${GREEN}$1${NC}"
@@ -20,18 +19,16 @@ function log_step {
     sleep 1
 }
 
-# Função para mostrar detalhes do resolv.conf
 function show_file_details {
     hexdump -C /etc/resolv.conf
     echo -e "${YELLOW} $(du -b /etc/resolv.conf | cut -f1) bytes${NC}"
 }
 
-# Executar comandos como labadm sem pedir senha interativa
 function run_as_labadm {
     echo "ifal1234" | sudo -S -u labadm bash -c "$1"
 }
 
-# Corrigir Wi-Fi
+# Fix-WIFI 
 function fix_wifi {
     log_step "[ 1 ]: Corrigindo Wi-Fi..."
 
@@ -53,25 +50,25 @@ function fix_wifi {
     echo -e "${GREEN}[ 1 ]: Wi-Fi corrigido com sucesso!${NC}"
 }
 
-# Corrigir Terminal (gnome-terminal, permissões e pacotes)
+# Fix-Terminal
 function fix_terminal {
     CURRENT_USER=$(whoami)
     log_step "[ 2 ]: Corrigindo Terminal do usuário: $CURRENT_USER"
 
-    # Adicionar usuário atual ao grupo sudo usando labadm
+  
     run_as_labadm "usermod -aG sudo $CURRENT_USER"
     echo -e "${GREEN}[ 2 ]: Usuário $CURRENT_USER adicionado ao grupo sudo.${NC}"
 
-    # Corrigir permissões da home
+    
     sudo chown "$CURRENT_USER:$CURRENT_USER" /home/"$CURRENT_USER"
     sudo chmod 755 /home/"$CURRENT_USER"
     echo -e "${GREEN}[ 2 ]: Permissões da home corrigidas.${NC}"
 
-    # Instalar pacotes essenciais
+    
     log_step "[ 2 ]: Instalando pacotes necessários para o Terminal..."
     run_as_labadm "apt-get update -y && apt-get install -y gnome-terminal bash sudo"
 
-    # Reconfigurar GNOME terminal
+    
     run_as_labadm "dpkg-reconfigure gnome-terminal --frontend=noninteractive"
     echo -e "${GREEN}[ 2 ]: GNOME Terminal reconfigurado.${NC}"
 
@@ -81,13 +78,12 @@ function fix_terminal {
     echo -e "${GREEN}[ 2 ]: Terminal configurado com sucesso para $CURRENT_USER.${NC}"
 }
 
-# Verificar se está rodando com sudo
 if [ "$EUID" -ne 0 ]; then
     echo -e "${RED}[ E ]: Execute este script com sudo: sudo $0${NC}"
     exit 1
 fi
 
-# Menu principal
+# MAIN
 clear
 echo -e "${BLUE}=====================================${NC}"
 echo -e "${GREEN}     P E R S I S T E N T - H E L P E R     ${NC}"
@@ -98,7 +94,7 @@ echo -e "${YELLOW}[ 1 ]: Corrigir Wi-Fi${NC}"
 echo -e "${YELLOW}[ 2 ]: Corrigir Terminal${NC}"
 echo -e "${YELLOW}[ 0 ]: Sair${NC}"
 echo -e "${BLUE}=====================================${NC}"
-read -p "Escolha uma opção: " OPTION
+read -p "[ E ]: " OPTION
 
 case $OPTION in
     1) fix_wifi ;;

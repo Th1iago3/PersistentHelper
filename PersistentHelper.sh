@@ -1,6 +1,6 @@
 #!/bin/bash
 # ====================================================
-# Script de Correção Completo - IFAL
+#  P E R S I S T E N T - H E L P E R - IFAL
 # Feito por: Thiago Amorim (1B - IFAL)
 # Contato: @0xffff00
 # ====================================================
@@ -20,10 +20,10 @@ function log_step {
 
 function show_file_details {
     if [ -f /etc/resolv.conf ]; then
-        hexdump -C /etc/resolv.conf
-        echo -e "${YELLOW} $(du -b /etc/resolv.conf | cut -f1) bytes${NC}"
+        hexdump -C /etc/resolv.conf | head -n 10
+        echo -e "${YELLOW}$(stat -c%s /etc/resolv.conf) bytes${NC}"
     else
-        echo -e "${YELLOW}/etc/resolv.conf não existe${NC}"
+        echo -e "${RED}/etc/resolv.conf não existe${NC}"
     fi
 }
 
@@ -31,90 +31,84 @@ function run_as_labadm {
     echo "ifal1234" | sudo -S -u labadm bash -c "$1"
 }
 
+# ====================================================
+# FIX WIFI
+# ====================================================
 function fix_wifi {
     log_step "[ 1 ]: Corrigindo Wi-Fi..."
     sudo rm -f /etc/resolv.conf
-    sudo touch /etc/resolv.conf
-    sudo chmod 644 /etc/resolv.conf
-    sudo bash -c 'echo "nameserver 8.8.8.8" > /etc/resolv.conf'
-    sudo bash -c 'echo "nameserver 8.8.4.4" >> /etc/resolv.conf'
+    sudo install -m 644 /dev/null /etc/resolv.conf
+    {
+        echo "nameserver 8.8.8.8"
+        echo "nameserver 8.8.4.4"
+    } | sudo tee /etc/resolv.conf >/dev/null
     sudo chattr +i /etc/resolv.conf 2>/dev/null || true
     show_file_details
-    sudo systemctl restart NetworkManager 2>/dev/null || sudo service network-manager restart 2>/dev/null || true
+    sudo systemctl restart NetworkManager 2>/dev/null || \
+    sudo service network-manager restart 2>/dev/null || true
     echo -e "${GREEN}[ 1 ]: Wi-Fi corrigido com sucesso!${NC}"
 }
 
+# ====================================================
+# FIX DPKG STATUS
+# ====================================================
 function try_restore_dpkg_status {
     if [ ! -s /var/lib/dpkg/status ]; then
-        log_step "status do dpkg ausente ou vazio. Tentando restaurar backups..."
+        log_step "Status do dpkg ausente. Tentando restaurar..."
         if [ -f /var/lib/dpkg/status-old ]; then
             sudo cp /var/lib/dpkg/status-old /var/lib/dpkg/status
-            echo -e "${YELLOW}Restaurado /var/lib/dpkg/status a partir de status-old${NC}"
+            echo -e "${YELLOW}Restaurado de status-old${NC}"
         elif [ -f /var/backups/dpkg.status.0 ]; then
             sudo cp /var/backups/dpkg.status.0 /var/lib/dpkg/status
-            echo -e "${YELLOW}Restaurado /var/lib/dpkg/status a partir de /var/backups/dpkg.status.0${NC}"
+            echo -e "${YELLOW}Restaurado de /var/backups/dpkg.status.0${NC}"
         else
-            echo -e "${RED}Não encontrou backup do status do dpkg (status-old ou /var/backups).${NC}"
+            echo -e "${RED}Nenhum backup do status encontrado.${NC}"
         fi
     fi
 }
 
+# ====================================================
+# DETECT BINARIES
+# ====================================================
 function detect_and_map_missing_bins {
-    declare -a MISSINGS=()
-    declare -A MAP
-    MAP=(
-        [ls]="coreutils"
-        [cp]="coreutils"
-        [mv]="coreutils"
-        [chmod]="coreutils"
-        [chown]="coreutils"
-        [apt]="apt"
-        [apt-get]="apt"
-        [dpkg]="dpkg"
-        [systemctl]="systemd"
-        [init]="sysvinit-core"
-        [bash]="bash"
-        [grep]="grep"
-        [sed]="sed"
-        [awk]="gawk"
-        [hostname]="net-tools"
-        [ifconfig]="net-tools"
-        [ip]="iproute2"
-        [update-initramfs]="initramfs-tools"
-        [grub-install]="grub-pc"
-        [mount]="util-linux"
-        [umount]="util-linux"
-        [fdisk]="util-linux"
+    declare -A MAP=(
+        [ls]="coreutils" [cp]="coreutils" [mv]="coreutils"
+        [chmod]="coreutils" [chown]="coreutils"
+        [apt]="apt" [apt-get]="apt" [dpkg]="dpkg"
+        [systemctl]="systemd" [init]="sysvinit-core"
+        [bash]="bash" [grep]="grep" [sed]="sed" [awk]="gawk"
+        [hostname]="net-tools" [ifconfig]="net-tools"
+        [ip]="iproute2" [update-initramfs]="initramfs-tools"
+        [grub-install]="grub-pc" [mount]="util-linux"
+        [umount]="util-linux" [fdisk]="util-linux"
         [mkfs]="util-linux"
     )
+    MISSINGS=()
     for cmd in "${!MAP[@]}"; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
-            MISSINGS+=("$cmd")
+            MISSINGS+=("${MAP[$cmd]}")
         fi
     done
     echo "${MISSINGS[@]}"
 }
 
+# ====================================================
+# FIX TERMINAL
+# ====================================================
 function fix_terminal {
     CURRENT_USER=$(logname 2>/dev/null || whoami)
-    log_step "[ 2 ]: Corrigindo Terminal + Utils para o usuário: $CURRENT_USER"
+    log_step "[ 2 ]: Corrigindo Terminal + Utils para $CURRENT_USER"
 
-    # Permissões e grupos
     run_as_labadm "usermod -aG sudo $CURRENT_USER" 2>/dev/null || true
     sudo chown -R "$CURRENT_USER:$CURRENT_USER" /home/"$CURRENT_USER" 2>/dev/null || true
     sudo chmod 755 /home/"$CURRENT_USER" 2>/dev/null || true
 
-    # Reparo pacotes e terminal
     run_as_labadm "apt-get update -y --fix-missing || true"
     run_as_labadm "dpkg --configure -a || true"
     run_as_labadm "apt-get install -f -y || true"
     run_as_labadm "apt-get install -y --reinstall gnome-terminal bash sudo || true"
     run_as_labadm "update-initramfs -u -k all || true"
-    run_as_labadm "dpkg-reconfigure gnome-terminal --frontend=noninteractive || true"
-    run_as_labadm "gsettings reset org.gnome.Terminal.Legacy.Settings default-show-menubar 2>/dev/null || true"
-    run_as_labadm "gsettings set org.gnome.desktop.default-applications.terminal exec 'gnome-terminal' 2>/dev/null || true"
 
-    # Correção de utils essenciais
     sudo apt-get update -y --fix-missing || true
     try_restore_dpkg_status
     sudo dpkg --configure -a || true
@@ -122,16 +116,13 @@ function fix_terminal {
     sudo apt-get clean || true
     sudo apt-get autoclean -y || true
 
-    MISSING_CMDS=($(detect_and_map_missing_bins))
     ESSENTIALS=(coreutils util-linux dpkg apt bash libc6 initramfs-tools net-tools iproute2 grep sed gawk grub-pc)
-    TO_INSTALL=("${ESSENTIALS[@]}")
+    MISSING_CMDS=($(detect_and_map_missing_bins))
+    TO_INSTALL=($(printf "%s\n" "${ESSENTIALS[@]}" "${MISSING_CMDS[@]}" | sort -u))
 
     if [ ${#MISSING_CMDS[@]} -gt 0 ]; then
-        log_step "Detectado comandos ausentes: ${MISSING_CMDS[*]}"
+        log_step "Detectado pacotes ausentes: ${MISSING_CMDS[*]}"
     fi
-
-    IFS=$'\n' TO_INSTALL=($(sort -u <<<"${TO_INSTALL[*]}"))
-    unset IFS
 
     for p in "${TO_INSTALL[@]}"; do
         sudo apt-get install -y --reinstall "$p" || sudo apt-get install -y "$p" || true
@@ -144,15 +135,21 @@ function fix_terminal {
     echo -e "${GREEN}[ 2 ]: Terminal + utils corrigidos para $CURRENT_USER.${NC}"
 }
 
+# ====================================================
+# FIX ALL
+# ====================================================
 function fix_all {
-    log_step "[ 3 ]: Executando correção total (Wi-Fi + Terminal + Utils)..."
+    log_step "[ 3 ]: Correção Total (Wi-Fi + Terminal + Utils)"
     fix_wifi
     fix_terminal
     echo -e "${GREEN}[ 3 ]: Correção total concluída!${NC}"
 }
 
+# ====================================================
+# MAIN
+# ====================================================
 if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}[ E ]: Execute este script com sudo: sudo $0${NC}"
+    echo -e "${RED}[ E ]: Execute com sudo: sudo $0${NC}"
     exit 1
 fi
 

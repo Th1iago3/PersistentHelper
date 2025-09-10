@@ -67,7 +67,7 @@ chmod +x PersistentHelper.sh
 sudo ./PersistentHelper.sh
 ```
 
-🔹 O script abrirá o menu principal para escolher a ação desejada.
+🤖 Será aberto um menu para que VOCÊ possa escolher livremente oque precisa no momento.
 
 ---
 

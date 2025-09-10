@@ -1,6 +1,6 @@
 #!/bin/bash 
 # ====================================================
-#  P E R S I S T E N T - H E L P E R - IFAL
+#  P E R S I S T E N T - H E L P E R
 # Feito por: Thiago Amorim (1B - IFAL)
 # Contato: @0xffff00
 # ====================================================

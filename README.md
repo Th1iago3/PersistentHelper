@@ -47,6 +47,12 @@ chmod +x PersistentHelper.sh
 
 ---
 
+## ❓ Como Utilizar
+
+```Pra usar é simples, basta em um outro computador, dar git clone no projeto e salvar no pendrive, logo, conectar ao computador que apresente defeitos relacionados ao que ele corrige e executa-lo no terminal, assim como é ensinado na documentação. ```
+
+---
+
 ## 🧩 Estrutura do Script
 
 * **fix\_wifi** → recria `resolv.conf`, aplica DNS do Google, protege contra alterações e reinicia o NetworkManager.

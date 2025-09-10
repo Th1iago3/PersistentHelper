@@ -17,7 +17,6 @@ Script em <b>Bash</b> para corrigir automaticamente problemas comuns no Linux: <
 ✔️ Corrige **Wi-Fi / resolv.conf / DNS**  
 ✔️ Repara **GNOME Terminal e permissões do usuário**  
 ✔️ Conserta **pacotes quebrados** (`dpkg`, `apt-get`, `initramfs`)  
-✔️ Adiciona usuário ao grupo **sudo** automaticamente  
 ✔️ **Menu interativo** com 3 opções:  
 
 [ 1 ] Corrigir Wi-Fi\

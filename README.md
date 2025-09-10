@@ -1,6 +1,3 @@
-<p align="center">
-  <img src="banner.png" alt="Persistent Helper Banner">
-</p>
 
 <h1 align="center">🛠️ Persistent Helper</h1>
 <p align="center">

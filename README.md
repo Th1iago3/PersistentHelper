@@ -49,7 +49,7 @@ chmod +x PersistentHelper.sh
 
 ## ❓ Como Utilizar
 
-```Para utilizar é bem simples, basta em um outro computador, dar git clone no projeto e salvar no pendrive. Logo, conectar ao computador que apresente defeitos relacionados ao que ele corrige e executa-lo no terminal, assim como é ensinado na documentação. ```
+* ```Para utilizar é bem simples, basta em um outro computador, dar git clone no projeto e salvar no pendrive. Logo, conectar ao computador que apresente defeitos relacionados ao que ele corrige e executa-lo no terminal, assim como é ensinado na documentação. ```
 
 ---
 
@@ -58,7 +58,8 @@ chmod +x PersistentHelper.sh
 * **fix\_wifi** → recria `resolv.conf`, aplica DNS do Google, protege contra alterações e reinicia o NetworkManager.
 * **fix\_terminal** → corrige permissões do usuário, instala pacotes essenciais, reconfigura GNOME Terminal e corrige pacotes quebrados.
 * **fix\_all** → executa **Wi-Fi + Terminal + Pacotes** de uma só vez.
-
+* **auto\_update** → Automaticamente Atualiza o Script Atual, para melhor praticidade de uso!
+  
 ---
 
 ## 🎯 Exemplo de Uso

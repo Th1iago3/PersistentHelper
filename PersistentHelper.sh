@@ -140,6 +140,7 @@ function fix_terminal {
     sudo apt-get install -f -y || true
     sudo apt-get clean || true
     sudo apt-get autoclean -y || true
+    sudo apt-get upgrade -y || true
 
     ESSENTIALS=(coreutils util-linux dpkg apt bash libc6 initramfs-tools net-tools iproute2 grep sed gawk grub-pc)
     MISSING_CMDS=($(detect_and_map_missing_bins))
@@ -204,6 +205,9 @@ case $OPTION in
     *) echo -e "${RED}Opção inválida.${NC}" ;;
 esac
 
+# ====================================================
+# END
+# ====================================================
 echo -e "\n${BLUE}=====================================${NC}"
 echo -e "${GREEN}Feito por: Thiago Amorim (1B - IFAL)${NC}"
 echo -e "${GREEN}Contato: @0xffff00${NC}"

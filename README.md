@@ -1,7 +1,7 @@
 
 <h1 align="center">🛠️ Persistent Helper</h1>
 <p align="center">
-Script em <b>Bash</b> para corrigir automaticamente problemas comuns no Linux: <br>
+Feito para corrigir automaticamente problemas no Linux: <br>
 <strong>Wi-Fi / DNS</strong> • <strong>Terminal</strong> • <strong>Pacotes quebrados</strong>
 </p>
 
@@ -9,8 +9,8 @@ Script em <b>Bash</b> para corrigir automaticamente problemas comuns no Linux: <
 
 ## 👨‍💻 Autor
 - 👤 **Thiago Amorim** (@0xffff00)  
-- 📚 Turma: 1B - IFAL  
-
+- 📚 Turma: 1B - IFAL
+  
 ---
 
 ## 🚀 Funcionalidades

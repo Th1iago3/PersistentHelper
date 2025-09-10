@@ -1,40 +1,82 @@
-# 🛠️ Fix Wi-Fi / DNS Resolver - Linux Script
+<p align="center">
+  <img src="banner.png" alt="Persistent Helper Banner">
+</p>
 
-> Script em **Bash** para corrigir problemas relacionados ao arquivo `/etc/resolv.conf` em distribuições Linux,  
-com foco em sistemas que utilizam o **NetworkManager**.  
-Ele recria o arquivo de configuração de DNS, aplica permissões corretas, protege contra alterações indevidas  
-e reinicia o serviço de rede para garantir conectividade.
+<h1 align="center">🛠️ Persistent Helper</h1>
+<p align="center">
+Script em <b>Bash</b> para corrigir automaticamente problemas comuns no Linux: <br>
+<strong>Wi-Fi / DNS</strong> • <strong>Terminal</strong> • <strong>Pacotes quebrados</strong>
+</p>
 
 ---
 
-## 📌 Autor
+## 👨‍💻 Autor
 - 👤 **Thiago Amorim** (@0xffff00)  
-- 📚 1B IFAL  
+- 📚 Turma: 1B - IFAL  
 
 ---
 
 ## 🚀 Funcionalidades
-✅ Remove o arquivo antigo `/etc/resolv.conf`  
-✅ Cria um novo arquivo com as permissões corretas (`rw-r--r--`)  
-✅ Define **DNS do Google** (`8.8.8.8` e `8.8.4.4`)  
-✅ Protege o arquivo contra modificações (`chattr +i`)  
-✅ Reinicia o **NetworkManager** para aplicar mudanças  
+✔️ Corrige **Wi-Fi / resolv.conf / DNS**  
+✔️ Repara **GNOME Terminal e permissões do usuário**  
+✔️ Conserta **pacotes quebrados** (`dpkg`, `apt-get`, `initramfs`)  
+✔️ Adiciona usuário ao grupo **sudo** automaticamente  
+✔️ **Menu interativo** com 3 opções:  
+
+\[ 1 ] Corrigir Wi-Fi
+\[ 2 ] Corrigir Terminal
+\[ 3 ] Correção Total (Wi-Fi + Terminal + Pacotes)
+\[ 0 ] Sair
 
 ---
 
 ## ⚙️ Pré-requisitos
-Antes de executar, certifique-se de ter:
-- Um sistema Linux com **systemd + NetworkManager**  
+- Linux com **systemd + NetworkManager**  
 - Permissões de **sudo**  
-- Pacotes básicos já instalados (`bash`, `coreutils`, `util-linux`, `git`)  
+- Pacotes básicos já instalados:  
+  - `bash`  
+  - `coreutils`  
+  - `util-linux`  
+  - `git`  
 
 ---
 
 ## 📥 Instalação
-
 Clone este repositório:
 ```bash
 git clone https://github.com/Th1iago3/PersistentHelper
 cd PersistentHelper
 chmod +x PersistentHelper.sh
 sudo bash PersistentHelper.sh
+````
+
+---
+
+## 🧩 Estrutura do Script
+
+* **fix\_wifi** → recria `resolv.conf`, aplica DNS do Google, protege contra alterações e reinicia o NetworkManager.
+* **fix\_terminal** → corrige permissões do usuário, instala pacotes essenciais, reconfigura GNOME Terminal e corrige pacotes quebrados.
+* **fix\_all** → executa **Wi-Fi + Terminal + Pacotes** de uma só vez.
+
+---
+
+## 🎯 Exemplo de Uso
+
+```bash
+sudo ./PersistentHelper.sh
+```
+
+🔹 O script abrirá o menu principal para escolher a ação desejada.
+
+---
+
+## 📌 Licença
+
+Distribuído livremente para fins educacionais.
+
+<p align="center">
+Feito com ❤️ por <b>Thiago Amorim</b> (1B - IFAL) <br>
+Contato: <a href="https://github.com/Th1iago3">@0xffff00</a>
+</p>
+
+---

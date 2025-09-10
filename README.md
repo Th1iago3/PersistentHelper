@@ -58,7 +58,7 @@ chmod +x PersistentHelper.sh
 * **fix\_wifi** → recria `resolv.conf`, aplica DNS do Google, protege contra alterações e reinicia o NetworkManager.
 * **fix\_terminal** → corrige permissões do usuário, instala pacotes essenciais, reconfigura GNOME Terminal e corrige pacotes quebrados.
 * **fix\_all** → executa **Wi-Fi + Terminal + Pacotes** de uma só vez.
-* **auto\_update** → Automaticamente Atualiza o Script Atual, para melhor praticidade de uso!
+* **auto\_update** → Automaticamente atualiza o Script atual para melhor praticidade de uso!
   
 ---
 

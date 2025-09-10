@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/bash 
 # ====================================================
-#  P E R S I S T E N T - H E L P E R - IFAL
+#  P E R S I S T E N T - H E L P E R
 # Feito por: Thiago Amorim (1B - IFAL)
 # Contato: @0xffff00
 # ====================================================
@@ -10,6 +10,31 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
+
+# ====================================================
+# AUTO UPDATE
+# ====================================================
+REPO_URL="https://raw.githubusercontent.com/Th1iago3/PersistentHelper/refs/heads/main/PersistentHelper.sh"
+SCRIPT_PATH="$(realpath "$0")"
+TMP_FILE="/tmp/persistent_helper_update.sh"
+
+function auto_update {
+    log_step "Verificando atualizações..."
+    if curl -fsSL "$REPO_URL" -o "$TMP_FILE"; then
+        if ! cmp -s "$SCRIPT_PATH" "$TMP_FILE"; then
+            echo -e "${YELLOW}[ UPD ]: Nova versão encontrada. Atualizando...${NC}"
+            chmod +x "$TMP_FILE"
+            mv "$TMP_FILE" "$SCRIPT_PATH"
+            echo -e "${GREEN}[ OK ]: Script atualizado! Reiniciando...${NC}"
+            exec "$SCRIPT_PATH" "$@"
+        else
+            echo -e "${GREEN}[ UPD ]: Já está na versão mais recente.${NC}"
+            rm -f "$TMP_FILE"
+        fi
+    else
+        echo -e "${RED}[ UPD ]: Não foi possível verificar atualizações.${NC}"
+    fi
+}
 
 function log_step {
     echo -e "\n${BLUE}=====================================${NC}"
@@ -152,6 +177,9 @@ if [ "$EUID" -ne 0 ]; then
     echo -e "${RED}[ E ]: Execute com sudo: sudo $0${NC}"
     exit 1
 fi
+
+# Verificar atualização antes de rodar
+auto_update "$@"
 
 clear
 echo -e "${BLUE}=====================================${NC}"

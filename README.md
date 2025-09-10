@@ -20,10 +20,10 @@ Script em <b>Bash</b> para corrigir automaticamente problemas comuns no Linux: <
 ✔️ Adiciona usuário ao grupo **sudo** automaticamente  
 ✔️ **Menu interativo** com 3 opções:  
 
-[ 1 ] Corrigir Wi-Fi
-[ 2 ] Corrigir Terminal
-[ 3 ] Correção Total (Wi-Fi + Terminal + Pacotes)
-[ 0 ] Sair
+[ 1 ] Corrigir Wi-Fi\
+[ 2 ] Corrigir Terminal\
+[ 3 ] Correção Total (Wi-Fi + Terminal + Pacotes)\
+[ 0 ] Sair\
 
 ---
 

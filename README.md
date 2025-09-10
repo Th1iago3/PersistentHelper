@@ -43,7 +43,6 @@ Clone este repositório:
 git clone https://github.com/Th1iago3/PersistentHelper
 cd PersistentHelper
 chmod +x PersistentHelper.sh
-sudo bash PersistentHelper.sh
 ````
 
 ---

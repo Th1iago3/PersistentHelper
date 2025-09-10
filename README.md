@@ -73,7 +73,7 @@ Distribuído livremente para fins educacionais.
 
 <p align="center">
 Feito com ❤️ por <b>Thiago Amorim</b> (1B - IFAL) <br>
-Contato: <a href="https://github.com/Th1iago3">@0xffff00</a>
+Contato: <a href="https://instagram.com/@0xffff00">@0xffff00</a>
 </p>
 
 ---

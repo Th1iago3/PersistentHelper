@@ -61,7 +61,7 @@ function unlock_fileSys {
         sudo chattr +i "$FILE" 2>/dev/null || true
         echo -e "[ $(date '+%H:%M:%S') ]: Unlocker aplicado com sucesso!"
     else
-        echo -e "[ $(date '+%H:%M:%S') ]: Permissão OK, não foi necessário desbloquear $FILE."
+        echo -e "[ $(date '+%H:%M:%S') ]: não foi necessário desbloquear $FILE."
     fi
 }
 

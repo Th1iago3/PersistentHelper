@@ -50,7 +50,7 @@ function fix_wifi {
 }
 
 # ====================================================
-# FIX DPKG STATUS
+# FIX DPKG
 # ====================================================
 function try_restore_dpkg_status {
     if [ ! -s /var/lib/dpkg/status ]; then
@@ -68,7 +68,7 @@ function try_restore_dpkg_status {
 }
 
 # ====================================================
-# DETECT BINARIES
+# BINS
 # ====================================================
 function detect_and_map_missing_bins {
     declare -A MAP=(

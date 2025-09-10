@@ -49,7 +49,7 @@ chmod +x PersistentHelper.sh
 
 ## ❓ Como Utilizar
 
-```Pra usar é simples, basta em um outro computador, dar git clone no projeto e salvar no pendrive, logo, conectar ao computador que apresente defeitos relacionados ao que ele corrige e executa-lo no terminal, assim como é ensinado na documentação. ```
+```Para utilizar é bem simples, basta em um outro computador, dar git clone no projeto e salvar no pendrive. Logo, conectar ao computador que apresente defeitos relacionados ao que ele corrige e executa-lo no terminal, assim como é ensinado na documentação. ```
 
 ---
 

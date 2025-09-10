@@ -47,26 +47,20 @@ function auto_update {
 # UNLOCKER
 # ====================================================
 function unlock_fileSys {
-    local FILE="/etc/resolv.conf"
+    local FILE="$1"
     if [ ! -w "$FILE" ]; then
         echo -e "[ $(date '+%H:%M:%S') ]: Aplicando Unlocker em $FILE..."
         sudo chattr -i "$FILE" 2>/dev/null || true
         sudo chmod 644 "$FILE" 2>/dev/null || true
-        sudo rm -f "$FILE" 2>/dev/null || true
-        sudo install -m 644 /dev/null "$FILE" 2>/dev/null
-        {
-            echo "nameserver 8.8.8.8"
-            echo "nameserver 8.8.4.4"
-        } | sudo tee "$FILE" >/dev/null
-        sudo chattr +i "$FILE" 2>/dev/null || true
-        echo -e "[ $(date '+%H:%M:%S') ]: Unlocker aplicado com sucesso!"
+        sudo touch "$FILE" 2>/dev/null || true
+        echo -e "[ $(date '+%H:%M:%S') ]: Unlocker Injetado com sucesso!"
     else
-        echo -e "[ $(date '+%H:%M:%S') ]: não foi necessário desbloquear $FILE."
+        echo -e "[ $(date '+%H:%M:%S') ]: Permissão concedida para $FILE, unlock não é necessário."
     fi
 }
 
 function show_file_details {
-    local FILE="/etc/resolv.conf"
+    local FILE="$1"
     if [ -f "$FILE" ]; then
         hexdump -C "$FILE" | head -n 10
         echo -e "${YELLOW}$(stat -c%s "$FILE") bytes${NC}"
@@ -83,9 +77,19 @@ function run_as_labadm {
 # FIX WIFI
 # ====================================================
 function fix_wifi {
+    local FILE="/etc/resolv.conf"
     log_step "[ 1 ]: Corrigindo Wi-Fi..."
-    unlock_fileSys
-    show_file_details
+    unlock_fileSys "$FILE"
+
+    sudo rm -f "$FILE" 2>/dev/null || true
+    sudo touch "$FILE" 2>/dev/null
+    {
+        echo "nameserver 8.8.8.8"
+        echo "nameserver 8.8.4.4"
+    } | sudo tee "$FILE" >/dev/null
+    sudo chattr +i "$FILE" 2>/dev/null || true
+
+    show_file_details "$FILE"
     sudo systemctl restart NetworkManager 2>/dev/null || sudo service network-manager restart 2>/dev/null || true
     echo -e "${GREEN}[ 1 ]: Wi-Fi corrigido com sucesso!${NC}"
     auto_update "$@"

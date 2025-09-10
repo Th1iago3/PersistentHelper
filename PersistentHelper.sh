@@ -18,6 +18,13 @@ REPO_URL="https://raw.githubusercontent.com/Th1iago3/PersistentHelper/refs/heads
 SCRIPT_PATH="$(realpath "$0")"
 TMP_FILE="/tmp/persistent_helper_update.sh"
 
+function log_step {
+    echo -e "\n${BLUE}=====================================${NC}"
+    echo -e "${GREEN}$1${NC}"
+    echo -e "${BLUE}=====================================${NC}\n"
+    sleep 1
+}
+
 function auto_update {
     log_step "Verificando atualizações..."
     if curl -fsSL "$REPO_URL" -o "$TMP_FILE"; then
@@ -36,19 +43,35 @@ function auto_update {
     fi
 }
 
-function log_step {
-    echo -e "\n${BLUE}=====================================${NC}"
-    echo -e "${GREEN}$1${NC}"
-    echo -e "${BLUE}=====================================${NC}\n"
-    sleep 1
+# ====================================================
+# UNLOCKER
+# ====================================================
+function unlock_fileSys {
+    local FILE="/etc/resolv.conf"
+    if [ ! -w "$FILE" ]; then
+        echo -e "[ $(date '+%H:%M:%S') ]: Aplicando Unlocker em $FILE..."
+        sudo chattr -i "$FILE" 2>/dev/null || true
+        sudo chmod 644 "$FILE" 2>/dev/null || true
+        sudo rm -f "$FILE" 2>/dev/null || true
+        sudo install -m 644 /dev/null "$FILE" 2>/dev/null
+        {
+            echo "nameserver 8.8.8.8"
+            echo "nameserver 8.8.4.4"
+        } | sudo tee "$FILE" >/dev/null
+        sudo chattr +i "$FILE" 2>/dev/null || true
+        echo -e "[ $(date '+%H:%M:%S') ]: Unlocker aplicado com sucesso!"
+    else
+        echo -e "[ $(date '+%H:%M:%S') ]: Permissão OK, não foi necessário desbloquear $FILE."
+    fi
 }
 
 function show_file_details {
-    if [ -f /etc/resolv.conf ]; then
-        hexdump -C /etc/resolv.conf | head -n 10
-        echo -e "${YELLOW}$(stat -c%s /etc/resolv.conf) bytes${NC}"
+    local FILE="/etc/resolv.conf"
+    if [ -f "$FILE" ]; then
+        hexdump -C "$FILE" | head -n 10
+        echo -e "${YELLOW}$(stat -c%s "$FILE") bytes${NC}"
     else
-        echo -e "${RED}/etc/resolv.conf não existe${NC}"
+        echo -e "${RED}$FILE não existe${NC}"
     fi
 }
 
@@ -61,17 +84,11 @@ function run_as_labadm {
 # ====================================================
 function fix_wifi {
     log_step "[ 1 ]: Corrigindo Wi-Fi..."
-    sudo rm -f /etc/resolv.conf
-    sudo install -m 644 /dev/null /etc/resolv.conf
-    {
-        echo "nameserver 8.8.8.8"
-        echo "nameserver 8.8.4.4"
-    } | sudo tee /etc/resolv.conf >/dev/null
-    sudo chattr +i /etc/resolv.conf 2>/dev/null || true
+    unlock_fileSys
     show_file_details
-    sudo systemctl restart NetworkManager 2>/dev/null || \
-    sudo service network-manager restart 2>/dev/null || true
+    sudo systemctl restart NetworkManager 2>/dev/null || sudo service network-manager restart 2>/dev/null || true
     echo -e "${GREEN}[ 1 ]: Wi-Fi corrigido com sucesso!${NC}"
+    auto_update "$@"
 }
 
 # ====================================================
@@ -179,9 +196,6 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# ====================================================
-# AUTO UPDATE (call)
-# ====================================================
 auto_update "$@"
 
 clear

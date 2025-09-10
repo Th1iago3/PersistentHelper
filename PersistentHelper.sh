@@ -1,6 +1,6 @@
 #!/bin/bash 
 # ====================================================
-#  P E R S I S T E N T - H E L P E R
+#  P E R S I S T E N T - H E L P E R - IFAL
 # Feito por: Thiago Amorim (1B - IFAL)
 # Contato: @0xffff00
 # ====================================================
@@ -178,7 +178,9 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Verificar atualização antes de rodar
+# ====================================================
+# AUTO UPDATE (call)
+# ====================================================
 auto_update "$@"
 
 clear

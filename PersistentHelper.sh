@@ -74,10 +74,10 @@ function auto_update {
             read -p "Atualizar agora? (y/N): " confirm
             if [[ $confirm =~ ^[Yy]$ ]]; then
                 log_step "Instalando Atualização..."
-                chmod +x "$TMP_FILE"
-                cp "$TMP_FILE" "$SCRIPT_PATH"
+                sudo chmod +x "$TMP_FILE"
+                sudo cp "$TMP_FILE" "$SCRIPT_PATH"
                 log_success "Atualizado! Reiniciando..."
-                exec "$SCRIPT_PATH" "$@"
+                sudo exec "$SCRIPT_PATH" "$@"
             else
                 log_warning "Atualização cancelada."
             fi

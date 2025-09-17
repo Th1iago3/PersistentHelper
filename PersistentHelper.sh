@@ -62,9 +62,9 @@ function ensure_curl {
 }
 
 function auto_update {
-    log_step "Verificando atualizações do script..."
+    log_step "Verificando atualizações..."
     if ! ensure_curl; then
-        log_warning "Usando versão local devido a problemas de conectividade."
+        log_warning "Não foi possível verificar..."
         rm -f "$TMP_FILE"
         return 0
     fi
@@ -73,7 +73,7 @@ function auto_update {
             log_warning "Nova versão detectada!"
             read -p "Atualizar agora? (y/N): " confirm
             if [[ $confirm =~ ^[Yy]$ ]]; then
-                log_step "Aplicando atualização..."
+                log_step "Instalando Atualização..."
                 chmod +x "$TMP_FILE"
                 cp "$TMP_FILE" "$SCRIPT_PATH"
                 log_success "Atualizado! Reiniciando..."
@@ -275,7 +275,7 @@ function fix_all {
 # MAIN
 # ====================================================
 if [ "$EUID" -ne 0 ]; then
-    log_error "Execute como root: sudo $0"
+    log_error "Execute como root: sudo bash $0"
     exit 1
 fi
 

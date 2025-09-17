@@ -2,13 +2,15 @@
 # ====================================================
 #  P E R S I S T E N T - H E L P E R
 # Feito por: Thiago Amorim (1B - IFAL)
-# Instagram: @0xffff00
+# Contato: @0xffff00
 # ====================================================
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
 # ====================================================
@@ -19,32 +21,71 @@ SCRIPT_PATH="$(realpath "$0")"
 TMP_FILE="$(mktemp)"
 
 function log_step {
-    echo -e "\n${BLUE}=====================================${NC}"
-    echo -e "${GREEN}$1${NC}"
-    echo -e "${BLUE}=====================================${NC}\n"
+    echo -e "\n${BLUE}═══════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}    $1    ${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════${NC}\n"
     sleep 1
 }
 
+function log_success {
+    echo -e "${GREEN}[ ✓ ]: $1${NC}"
+}
+
+function log_warning {
+    echo -e "${YELLOW}[ ! ]: $1${NC}"
+}
+
+function log_error {
+    echo -e "${RED}[ ✗ ]: $1${NC}"
+}
+
+function check_internet {
+    if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function ensure_curl {
+    if ! command -v curl >/dev/null 2>&1; then
+        log_warning "Curl não encontrado. Tentando instalar..."
+        if check_internet && sudo apt update -qq >/dev/null 2>&1 && sudo apt install -y curl >/dev/null 2>&1; then
+            log_success "Curl instalado com sucesso."
+            return 0
+        else
+            log_error "Falha ao instalar curl. Continuando sem verificação remota."
+            return 1
+        fi
+    fi
+    return 0
+}
+
 function auto_update {
-    log_step "Verificando atualizações..."
-    if curl -fsSL "$REPO_URL" -o "$TMP_FILE"; then
+    log_step "Verificando atualizações do script..."
+    if ! ensure_curl; then
+        log_warning "Usando versão local devido a problemas de conectividade."
+        rm -f "$TMP_FILE"
+        return 0
+    fi
+    if curl -fsSL "$REPO_URL" -o "$TMP_FILE" 2>/dev/null; then
         if ! cmp -s "$SCRIPT_PATH" "$TMP_FILE"; then
-            echo -e "${YELLOW}[ UPD ]: Nova versão encontrada.${NC}"
-            read -p "Deseja atualizar? (y/N): " confirm
+            log_warning "Nova versão detectada!"
+            read -p "Atualizar agora? (y/N): " confirm
             if [[ $confirm =~ ^[Yy]$ ]]; then
-                echo -e "${YELLOW}[ UPD ]: Atualizando...${NC}"
+                log_step "Aplicando atualização..."
                 chmod +x "$TMP_FILE"
-                cat "$TMP_FILE" > "$SCRIPT_PATH"
-                echo -e "${GREEN}[ OK ]: Script atualizado! Reiniciando...${NC}"
+                cp "$TMP_FILE" "$SCRIPT_PATH"
+                log_success "Atualizado! Reiniciando..."
                 exec "$SCRIPT_PATH" "$@"
             else
-                echo -e "${YELLOW}[ UPD ]: Atualização cancelada.${NC}"
+                log_warning "Atualização cancelada."
             fi
         else
-            echo -e "${GREEN}[ UPD ]: Já está na versão mais recente.${NC}"
+            log_success "Versão atualizada."
         fi
     else
-        echo -e "${RED}[ UPD ]: Não foi possível verificar atualizações.${NC}"
+        log_error "Falha na verificação remota."
     fi
     rm -f "$TMP_FILE"
 }
@@ -55,28 +96,25 @@ function auto_update {
 function unlock_fileSys {
     local FILE="$1"
     if [ ! -w "$FILE" ]; then
-        echo -e "[ $(date '+%H:%M:%S') ]: Aplicando Unlocker em $FILE..."
+        echo -e "${PURPLE}[ $(date '+%H:%M:%S') ]: Desbloqueando $FILE...${NC}"
         sudo chattr -i "$FILE" 2>/dev/null || true
         sudo chmod 644 "$FILE" 2>/dev/null || true
         sudo touch "$FILE" 2>/dev/null || true
-        echo -e "[ $(date '+%H:%M:%S') ]: Unlocker Injetado com sucesso!"
+        log_success "Arquivo desbloqueado."
     else
-        echo -e "[ $(date '+%H:%M:%S') ]: Permissão concedida para $FILE, unlock não é necessário."
+        echo -e "${PURPLE}[ $(date '+%H:%M:%S') ]: Acesso liberado para $FILE.${NC}"
     fi
 }
 
 function show_file_details {
     local FILE="$1"
     if [ -f "$FILE" ]; then
-        hexdump -C "$FILE" | head -n 10
-        echo -e "${YELLOW}$(stat -c%s "$FILE") bytes${NC}"
+        echo -e "${CYAN}Conteúdo de $FILE:${NC}"
+        cat "$FILE"
+        echo -e "${YELLOW}Tamanho: $(stat -c%s "$FILE") bytes${NC}"
     else
-        echo -e "${RED}$FILE não existe${NC}"
+        log_error "$FILE não encontrado."
     fi
-}
-
-function run_as_labadm {
-    echo "ifal1234" | sudo -S -u labadm bash -c "$1"
 }
 
 # ====================================================
@@ -84,21 +122,31 @@ function run_as_labadm {
 # ====================================================
 function fix_wifi {
     local FILE="/etc/resolv.conf"
-    log_step "[ 1 ]: Corrigindo Wi-Fi..."
+    log_step "Corrigindo configuração de Wi-Fi..."
     unlock_fileSys "$FILE"
 
     sudo rm -f "$FILE" 2>/dev/null || true
-    sudo touch "$FILE" 2>/dev/null
+    sudo touch "$FILE" 2>/dev/null || true
     {
+        echo "# Configuração DNS via PersistentHelper"
         echo "nameserver 8.8.8.8"
         echo "nameserver 8.8.4.4"
-    } | sudo tee "$FILE" >/dev/null
+        echo "search localdomain"
+        echo "options ndots:1 timeout:1"
+    } | sudo tee "$FILE" >/dev/null || true
     sudo chattr +i "$FILE" 2>/dev/null || true
 
     show_file_details "$FILE"
     sudo systemctl restart NetworkManager 2>/dev/null || sudo service network-manager restart 2>/dev/null || true
-    echo -e "${GREEN}[ 1 ]: Wi-Fi corrigido com sucesso!${NC}"
-    auto_update "$@"
+    sleep 3
+
+    if check_internet; then
+        log_success "Conectividade confirmada!"
+        ensure_curl
+        auto_update "$@"
+    else
+        log_warning "Conectividade ainda instável. Tente reconectar manualmente."
+    fi
 }
 
 # ====================================================
@@ -106,15 +154,17 @@ function fix_wifi {
 # ====================================================
 function try_restore_dpkg_status {
     if [ ! -s /var/lib/dpkg/status ]; then
-        log_step "Status do dpkg ausente. Tentando restaurar..."
-        if [ -f /var/lib/dpkg/status-old ]; then
-            sudo cp /var/lib/dpkg/status-old /var/lib/dpkg/status
-            echo -e "${YELLOW}Restaurado de status-old${NC}"
-        elif [ -f /var/backups/dpkg.status.0 ]; then
-            sudo cp /var/backups/dpkg.status.0 /var/lib/dpkg/status
-            echo -e "${YELLOW}Restaurado de /var/backups/dpkg.status.0${NC}"
-        else
-            echo -e "${RED}Nenhum backup do status encontrado.${NC}"
+        log_step "Restaurando status do dpkg..."
+        local BACKUP_FOUND=false
+        if [ -f /var/lib/dpkg/status-old ] && sudo cp /var/lib/dpkg/status-old /var/lib/dpkg/status; then
+            log_success "Restaurado de status-old."
+            BACKUP_FOUND=true
+        elif [ -f /var/backups/dpkg.status.0 ] && sudo cp /var/backups/dpkg.status.0 /var/lib/dpkg/status; then
+            log_success "Restaurado de backup principal."
+            BACKUP_FOUND=true
+        fi
+        if [ "$BACKUP_FOUND" = false ]; then
+            log_error "Nenhum backup disponível."
         fi
     fi
 }
@@ -133,34 +183,32 @@ function detect_and_map_missing_bins {
         [ip]="iproute2" [update-initramfs]="initramfs-tools"
         [grub-install]="grub-pc" [mount]="util-linux"
         [umount]="util-linux" [fdisk]="util-linux"
-        [mkfs]="util-linux"
+        [mkfs]="util-linux" [ping]="iputils-ping"
+        [curl]="curl" [wget]="wget"
     )
-    MISSINGS=()
+    local MISSINGS=()
     for cmd in "${!MAP[@]}"; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
             MISSINGS+=("${MAP[$cmd]}")
         fi
     done
-    echo "${MISSINGS[@]}"
+    printf "%s\n" "${MISSINGS[@]}"
 }
 
 # ====================================================
 # FIX TERMINAL
 # ====================================================
 function fix_terminal {
-    CURRENT_USER=$(logname 2>/dev/null || whoami)
-    log_step "[ 2 ]: Corrigindo Terminal + Utils para $CURRENT_USER"
+    local CURRENT_USER=$(logname 2>/dev/null || whoami)
+    log_step "Corrigindo Terminal e Utilitários para $CURRENT_USER"
 
-    run_as_labadm "usermod -aG sudo $CURRENT_USER" 2>/dev/null || true
-    sudo chown -R "$CURRENT_USER:$CURRENT_USER" /home/"$CURRENT_USER" 2>/dev/null || true
-    sudo chmod 755 /home/"$CURRENT_USER" 2>/dev/null || true
+    # Garantir permissões de usuário
+    usermod -aG sudo "$CURRENT_USER" 2>/dev/null || true
+    sudo chown -R "$CURRENT_USER:$CURRENT_USER" "/home/$CURRENT_USER" 2>/dev/null || true
+    sudo chmod 755 "/home/$CURRENT_USER" 2>/dev/null || true
 
-    run_as_labadm "apt-get update -y --fix-missing || true"
-    run_as_labadm "dpkg --configure -a || true"
-    run_as_labadm "apt-get install -f -y || true"
-    run_as_labadm "apt-get install -y --reinstall gnome-terminal bash sudo || true"
-    run_as_labadm "update-initramfs -u -k all || true"
-
+    # Reparos no sistema de pacotes
+    log_step "Atualizando repositórios e reparando pacotes..."
     sudo apt-get update -y --fix-missing || true
     try_restore_dpkg_status
     sudo dpkg --configure -a || true
@@ -169,70 +217,99 @@ function fix_terminal {
     sudo apt-get autoclean -y || true
     sudo apt-get upgrade -y || true
 
-    ESSENTIALS=(coreutils util-linux dpkg apt bash libc6 initramfs-tools net-tools iproute2 grep sed gawk grub-pc)
-    MISSING_CMDS=($(detect_and_map_missing_bins))
-    TO_INSTALL=($(printf "%s\n" "${ESSENTIALS[@]}" "${MISSING_CMDS[@]}" | sort -u))
+    # Instalar/Reinstalar essenciais
+    local ESSENTIALS=(coreutils util-linux dpkg apt bash libc6 initramfs-tools net-tools iproute2 grep sed gawk grub-pc iputils-ping curl wget gnome-terminal sudo)
+    local MISSING_CMDS=($(detect_and_map_missing_bins))
+    local TO_INSTALL=($(printf "%s\n" "${ESSENTIALS[@]}" "${MISSING_CMDS[@]}" | sort -u))
 
     if [ ${#MISSING_CMDS[@]} -gt 0 ]; then
-        log_step "Detectado pacotes ausentes: ${MISSING_CMDS[*]}"
+        log_warning "Pacotes ausentes detectados: ${MISSING_CMDS[*]}"
     fi
 
+    log_step "Instalando/Reinstalando pacotes essenciais..."
     for p in "${TO_INSTALL[@]}"; do
-        sudo apt-get install -y --reinstall "$p" || sudo apt-get install -y "$p" || true
+        if sudo apt-get install -y --reinstall "$p" 2>/dev/null; then
+            log_success "$p reinstalado."
+        elif sudo apt-get install -y "$p" 2>/dev/null; then
+            log_success "$p instalado."
+        else
+            log_error "Falha em $p."
+        fi
     done
 
+    # Configurações finais
     sudo dpkg --configure -a || true
     sudo apt-get install -f -y || true
-    sudo update-initramfs -u -k all || true
+    sudo update-initramfs -u -k all 2>/dev/null || true
 
-    echo -e "${GREEN}[ 2 ]: Terminal + utils corrigidos para $CURRENT_USER.${NC}"
+    log_success "Terminal e utilitários corrigidos para $CURRENT_USER."
+}
+
+# ====================================================
+# FIX GRUB (NOVO)
+# ====================================================
+function fix_grub {
+    log_step "Corrigindo GRUB..."
+    sudo update-grub 2>/dev/null || true
+    if command -v grub-install >/dev/null 2>&1; then
+        sudo grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB 2>/dev/null || \
+        sudo grub-install /dev/sda 2>/dev/null || true
+        log_success "GRUB atualizado."
+    else
+        log_error "grub-install não disponível."
+    fi
 }
 
 # ====================================================
 # FIX ALL
 # ====================================================
 function fix_all {
-    log_step "[ 3 ]: Correção Total (Wi-Fi + Terminal + Utils)"
-    fix_wifi
+    log_step "Iniciando Correção Completa (Wi-Fi + Terminal + GRUB + Utils)"
+    fix_wifi "$@"
     fix_terminal
-    echo -e "${GREEN}[ 3 ]: Correção total concluída!${NC}"
+    fix_grub
+    log_success "Correção total finalizada!"
 }
 
 # ====================================================
 # MAIN
 # ====================================================
 if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}[ E ]: Execute com sudo: sudo bash $0${NC}"
+    log_error "Execute como root: sudo $0"
     exit 1
 fi
 
 auto_update "$@"
 
 clear
-echo -e "${BLUE}=====================================${NC}"
-echo -e "${GREEN}     P E R S I S T E N T - H E L P E R     ${NC}"
-echo -e "${GREEN}         Thiago Amorim (1B - IFAL)    ${NC}"
-echo -e "${GREEN}              @0xffff00               ${NC}"
-echo -e "${BLUE}=====================================${NC}"
-echo -e "${YELLOW}[ 1 ]: Corrigir Wi-Fi${NC}"
-echo -e "${YELLOW}[ 2 ]: Corrigir Terminal (com Utils e Pacotes)${NC}"
-echo -e "${YELLOW}[ 3 ]: Correção Total (Wi-Fi + Terminal + Utils)${NC}"
-echo -e "${YELLOW}[ 0 ]: Sair${NC}"
-echo -e "${BLUE}=====================================${NC}"
-read -p "[ E ]: " OPTION
+echo -e "${BLUE}══════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}          P E R S I S T E N T - H E L P E R              ${NC}"
+echo -e "${PURPLE}              Thiago Amorim (1B - IFAL)                  ${NC}"
+echo -e "${CYAN}                    @0xffff00                            ${NC}"
+echo -e "${BLUE}══════════════════════════════════════════════════════════${NC}"
+echo ""
+echo -e "${YELLOW}[ 1 ]: Corrigir Wi-Fi (com verificação de conectividade) ${NC}"
+echo -e "${YELLOW}[ 2 ]: Corrigir Terminal + Utils + Pacotes             ${NC}"
+echo -e "${YELLOW}[ 3 ]: Correção Total (Tudo acima + GRUB)              ${NC}"
+echo -e "${YELLOW}[ 4 ]: Corrigir apenas GRUB                            ${NC}"
+echo -e "${YELLOW}[ 0 ]: Sair                                          ${NC}"
+echo ""
+echo -e "${BLUE}══════════════════════════════════════════════════════════${NC}"
+read -p "$(echo -e ${GREEN}Escolha uma opção [0-4]: ${NC}) " OPTION
 
 case $OPTION in
-    1) fix_wifi ;;
+    1) fix_wifi "$@" ;;
     2) fix_terminal ;;
-    3) fix_all ;;
-    0) echo -e "${RED}Saindo...${NC}" ;;
-    *) echo -e "${RED}Opção inválida.${NC}" ;;
+    3) fix_all "$@" ;;
+    4) fix_grub ;;
+    0) log_warning "Saindo do PersistentHelper."; exit 0 ;;
+    *) log_error "Opção inválida. Tente novamente." ;;
 esac
 
 # ====================================================
 # END
 # ====================================================
-echo -e "\n${BLUE}=====================================${NC}"
-echo -e "${GREEN}Feito por: Thiago Amorim (1B - IFAL)${NC}"
-echo -e "${GREEN}Contato: @0xffff00${NC}"
-echo -e "${BLUE}=====================================${NC}"
+echo -e "\n${BLUE}══════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}Feito por: Thiago Amorim (1B - IFAL)                     ${NC}"
+echo -e "${CYAN}Contato: @0xffff00                                   ${NC}"
+echo -e "${BLUE}══════════════════════════════════════════════════════════${NC}"

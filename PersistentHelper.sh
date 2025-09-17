@@ -29,11 +29,17 @@ function auto_update {
     log_step "Verificando atualizações..."
     if curl -fsSL "$REPO_URL" -o "$TMP_FILE"; then
         if ! cmp -s "$SCRIPT_PATH" "$TMP_FILE"; then
-            echo -e "${YELLOW}[ UPD ]: Nova versão encontrada. Atualizando...${NC}"
-            chmod +x "$TMP_FILE"
-            cat "$TMP_FILE" > "$SCRIPT_PATH"
-            echo -e "${GREEN}[ OK ]: Script atualizado! Reiniciando...${NC}"
-            exec "$SCRIPT_PATH" "$@"
+            echo -e "${YELLOW}[ UPD ]: Nova versão encontrada.${NC}"
+            read -p "Deseja atualizar? (y/N): " confirm
+            if [[ $confirm =~ ^[Yy]$ ]]; then
+                echo -e "${YELLOW}[ UPD ]: Atualizando...${NC}"
+                chmod +x "$TMP_FILE"
+                cat "$TMP_FILE" > "$SCRIPT_PATH"
+                echo -e "${GREEN}[ OK ]: Script atualizado! Reiniciando...${NC}"
+                exec "$SCRIPT_PATH" "$@"
+            else
+                echo -e "${YELLOW}[ UPD ]: Atualização cancelada.${NC}"
+            fi
         else
             echo -e "${GREEN}[ UPD ]: Já está na versão mais recente.${NC}"
         fi

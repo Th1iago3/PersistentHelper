@@ -196,7 +196,7 @@ function fix_all {
 # MAIN
 # ====================================================
 if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}[ E ]: Execute com sudo: sudo $0${NC}"
+    echo -e "${RED}[ E ]: Execute com sudo: sudo bash $0${NC}"
     exit 1
 fi
 

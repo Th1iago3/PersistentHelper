@@ -2,7 +2,7 @@
 # ====================================================
 #  P E R S I S T E N T - H E L P E R
 # Feito por: Thiago Amorim (1B - IFAL)
-# Contato: @0xffff00
+# Instagram: @0xffff00
 # ====================================================
 
 RED='\033[0;31m'

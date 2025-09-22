@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 # ====================================================
 #  P E R S I S T E N T - H E L P E R
 # Feito por: Thiago Amorim (1B - IFAL)
@@ -120,9 +120,55 @@ function show_file_details {
 # ====================================================
 # FIX WIFI
 # ====================================================
+function detect_wifi_adapter {
+    log_step "Detectando adaptador Wi-Fi..."
+    if ! command -v rfkill >/dev/null 2>&1; then
+        sudo apt install -y rfkill >/dev/null 2>&1 || true
+    fi
+    rfkill unblock wifi 2>/dev/null || true
+    if iwconfig 2>/dev/null | grep -q "IEEE 802.11"; then
+        log_success "Adaptador Wi-Fi detectado e desbloqueado."
+        return 0
+    elif lspci | grep -i -E "wireless|wifi|802.11"; then
+        log_success "Adaptador Wi-Fi detectado via lspci."
+        return 0
+    else
+        log_error "Nenhum adaptador Wi-Fi detectado. Verifique hardware."
+        return 1
+    fi
+}
+
+function scan_and_connect_wifi {
+    log_step "Escaneando redes Wi-Fi disponíveis..."
+    if ! command -v nmcli >/dev/null 2>&1; then
+        log_error "nmcli não encontrado. Instale network-manager."
+        return 1
+    fi
+    sudo nmcli device wifi rescan 2>/dev/null || true
+    sleep 5
+    NETWORKS=$(sudo nmcli -f SSID,SIGNAL,SECURITY device wifi list | tail -n +2)
+    if [ -z "$NETWORKS" ]; then
+        log_error "Nenhuma rede Wi-Fi encontrada."
+        return 1
+    fi
+    echo -e "${CYAN}Redes disponíveis:${NC}"
+    echo "$NETWORKS"
+    read -p "$(echo -e ${GREEN}Nome da Rede para conectar: ${NC})" SSID
+    read -s -p "$(echo -e ${GREEN}Digite a senha: ${NC})" PASSWORD
+    echo ""
+    if sudo nmcli device wifi connect "$SSID" password "$PASSWORD" 2>/dev/null; then
+        log_success "Conectado à rede $SSID."
+        return 0
+    else
+        log_error "Falha ao conectar à $SSID. Tente novamente."
+        return 1
+    fi
+}
+
 function fix_wifi {
     local FILE="/etc/resolv.conf"
     log_step "Corrigindo configuração de Wi-Fi..."
+    detect_wifi_adapter
     unlock_fileSys "$FILE"
 
     sudo rm -f "$FILE" 2>/dev/null || true
@@ -139,6 +185,10 @@ function fix_wifi {
     show_file_details "$FILE"
     sudo systemctl restart NetworkManager 2>/dev/null || sudo service network-manager restart 2>/dev/null || true
     sleep 3
+
+    if ! check_internet; then
+        scan_and_connect_wifi
+    fi
 
     if check_internet; then
         log_success "Conectividade confirmada!"
@@ -184,7 +234,11 @@ function detect_and_map_missing_bins {
         [grub-install]="grub-pc" [mount]="util-linux"
         [umount]="util-linux" [fdisk]="util-linux"
         [mkfs]="util-linux" [ping]="iputils-ping"
-        [curl]="curl" [wget]="wget"
+        [curl]="curl" [wget]="wget" [gedit]="gedit"
+        [nano]="nano" [vim]="vim" [htop]="htop" [git]="git"
+        [gparted]="gparted" [nmcli]="network-manager"
+        [iwconfig]="net-tools" [rfkill]="rfkill"
+        [lspci]="pciutils" [uuidgen]="uuid-runtime"
     )
     local MISSINGS=()
     for cmd in "${!MAP[@]}"; do
@@ -200,10 +254,10 @@ function detect_and_map_missing_bins {
 # ====================================================
 function fix_terminal {
     local CURRENT_USER=$(logname 2>/dev/null || whoami)
-    log_step "Corrigindo Terminal e Utilitários para $CURRENT_USER"
+    log_step "Corrigindo Terminal, Editor de Texto e Utilitários para $CURRENT_USER"
 
     # Garantir permissões de usuário
-    usermod -aG sudo "$CURRENT_USER" 2>/dev/null || true
+    sudo usermod -aG sudo "$CURRENT_USER" 2>/dev/null || true
     sudo chown -R "$CURRENT_USER:$CURRENT_USER" "/home/$CURRENT_USER" 2>/dev/null || true
     sudo chmod 755 "/home/$CURRENT_USER" 2>/dev/null || true
 
@@ -216,9 +270,15 @@ function fix_terminal {
     sudo apt-get clean || true
     sudo apt-get autoclean -y || true
     sudo apt-get upgrade -y || true
+    sudo apt-get dist-upgrade -y || true
 
     # Instalar/Reinstalar essenciais
-    local ESSENTIALS=(coreutils util-linux dpkg apt bash libc6 initramfs-tools net-tools iproute2 grep sed gawk grub-pc iputils-ping curl wget gnome-terminal sudo)
+    local ESSENTIALS=(
+        coreutils util-linux dpkg apt bash libc6 initramfs-tools
+        net-tools iproute2 grep sed gawk grub-pc iputils-ping curl
+        wget gnome-terminal sudo gedit nano vim htop git gparted
+        network-manager rfkill pciutils uuid-runtime dbus
+    )
     local MISSING_CMDS=($(detect_and_map_missing_bins))
     local TO_INSTALL=($(printf "%s\n" "${ESSENTIALS[@]}" "${MISSING_CMDS[@]}" | sort -u))
 
@@ -242,11 +302,11 @@ function fix_terminal {
     sudo apt-get install -f -y || true
     sudo update-initramfs -u -k all 2>/dev/null || true
 
-    log_success "Terminal e utilitários corrigidos para $CURRENT_USER."
+    log_success "Terminal, editor de texto (gedit) e utilitários corrigidos para $CURRENT_USER."
 }
 
 # ====================================================
-# FIX GRUB (NOVO)
+# FIX GRUB
 # ====================================================
 function fix_grub {
     log_step "Corrigindo GRUB..."
@@ -261,13 +321,44 @@ function fix_grub {
 }
 
 # ====================================================
+# RESET UUID
+# ====================================================
+function reset_uuid {
+    log_step "Resetando UUID do sistema para bypass e anonimato..."
+    if command -v systemd-machine-id-setup >/dev/null 2>&1; then
+        sudo systemd-machine-id-setup 2>/dev/null || true
+        log_success "UUID resetado via systemd."
+    elif command -v dbus-uuidgen >/dev/null 2>&1; then
+        sudo rm -f /etc/machine-id /var/lib/dbus/machine-id 2>/dev/null || true
+        sudo dbus-uuidgen --ensure=/etc/machine-id 2>/dev/null || true
+        sudo ln -s /etc/machine-id /var/lib/dbus/machine-id 2>/dev/null || true
+        log_success "UUID resetado via dbus-uuidgen."
+    elif command -v uuidgen >/dev/null 2>&1; then
+        sudo rm -f /etc/machine-id /var/lib/dbus/machine-id 2>/dev/null || true
+        sudo uuidgen | sudo tee /etc/machine-id >/dev/null || true
+        sudo ln -s /etc/machine-id /var/lib/dbus/machine-id 2>/dev/null || true
+        log_success "UUID gerado via uuidgen."
+    else
+        log_error "Nenhuma ferramenta para gerar UUID disponível. Instale uuid-runtime ou dbus."
+        return 1
+    fi
+    NEW_UUID=$(cat /etc/machine-id 2>/dev/null)
+    if [ -n "$NEW_UUID" ]; then
+        log_success "Novo UUID gerado sem erros: $NEW_UUID"
+    else
+        log_error "Falha ao verificar novo UUID."
+    fi
+}
+
+# ====================================================
 # FIX ALL
 # ====================================================
 function fix_all {
-    log_step "Iniciando Correção Completa (Wi-Fi + Terminal + GRUB + Utils)"
+    log_step "Iniciando Correção Completa (Wi-Fi + Terminal + Editor + GRUB + Utils + UUID)"
     fix_wifi "$@"
     fix_terminal
     fix_grub
+    reset_uuid
     log_success "Correção total finalizada!"
 }
 
@@ -288,20 +379,22 @@ echo -e "${PURPLE}              Thiago Amorim (1B - IFAL)                  ${NC}
 echo -e "${CYAN}                    @0xffff00                            ${NC}"
 echo -e "${BLUE}══════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "${YELLOW}[ 1 ]: Corrigir Wi-Fi (com verificação de conectividade) ${NC}"
-echo -e "${YELLOW}[ 2 ]: Corrigir Terminal + Utils + Pacotes             ${NC}"
-echo -e "${YELLOW}[ 3 ]: Correção Total (Tudo acima + GRUB)              ${NC}"
+echo -e "${YELLOW}[ 1 ]: Corrigir Wi-Fi (com detecção, scan e conexão)    ${NC}"
+echo -e "${YELLOW}[ 2 ]: Corrigir Terminal + Editor (gedit) + Utils + Pacotes ${NC}"
+echo -e "${YELLOW}[ 3 ]: Correção Total (Tudo acima + GRUB + UUID)       ${NC}"
 echo -e "${YELLOW}[ 4 ]: Corrigir apenas GRUB                            ${NC}"
+echo -e "${YELLOW}[ 5 ]: Resetar UUID do Sistema (Bypass e Novo ID)      ${NC}"
 echo -e "${YELLOW}[ 0 ]: Sair                                          ${NC}"
 echo ""
 echo -e "${BLUE}══════════════════════════════════════════════════════════${NC}"
-read -p "$(echo -e ${GREEN}Escolha uma opção [0-4]: ${NC}) " OPTION
+read -p "$(echo -e ${GREEN}Escolha uma opção [0-5]: ${NC}) " OPTION
 
 case $OPTION in
     1) fix_wifi "$@" ;;
     2) fix_terminal ;;
     3) fix_all "$@" ;;
     4) fix_grub ;;
+    5) reset_uuid ;;
     0) log_warning "Saindo do PersistentHelper."; exit 0 ;;
     *) log_error "Opção inválida. Tente novamente." ;;
 esac
